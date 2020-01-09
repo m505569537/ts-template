@@ -5,6 +5,8 @@ const tsImportPluginFactory = require('ts-import-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 
+const modifyVars = require('./config/modifyVars');
+
 module.exports = (env) => {
     let config = {
         mode: env == 'development' ? 'development' : 'production',
@@ -40,7 +42,8 @@ module.exports = (env) => {
                             loader: 'less-loader',
                             options: {
                                 javascriptEnabled: true,
-                                sourceMap: true
+                                sourceMap: true,
+                                modifyVars
                             }
                         }
                     ]
