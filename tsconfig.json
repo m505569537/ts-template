@@ -1,17 +1,24 @@
 {
-    "compilerOptions": {
-      "sourceMap": true,
-      "noImplicitAny": false,
-      "module": "ESNext",
-      "moduleResolution": "node",
-      "target": "ESNext",
-      "jsx": "react",
-      "esModuleInterop": true,
-    },
-    "include": [
-      "src/**/*"
-    ],
-    "exclude": [
-        "node_modules"
-    ]
+  "compilerOptions": {
+    // 在tsx文件中支持jsx写法
+    "jsx": "react",
+    // 生成哪种模块系统代码 "commonJS AMD UMD ES6"等等
+    "module": "CommonJS",
+    "allowJs": true,
+    "checkJs": true,
+    // 相当于一个声明，对webpack中配置alias的补充，告诉解析器不要报红色提示
+    "paths": {},
+    "baseUrl": "./",
+    // 允许使用 ES装饰器
+    "experimentalDecorators": true,
+    "sourceMap": true,
+    // 编译生成的目标版本
+    "target": "ES5",
+    "esModuleInterop": true
+  },
+  "exclude": ["node_modules"],
+  "include": [
+    "src/**/*",
+    "project.d.ts"
+  ]
 }

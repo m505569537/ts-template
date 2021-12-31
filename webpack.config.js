@@ -1,118 +1,93 @@
-const webpack = require('webpack');
 const path = require('path');
-const MiniCssExtractPlugin = require('mini-css-extract-plugin');
-const tsImportPluginFactory = require('ts-import-plugin');
+const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-const { CleanWebpackPlugin } = require('clean-webpack-plugin');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
-const modifyVars = require('./config/modifyVars');
+const { ModuleFederationPlugin } = webpack.container;
 
-module.exports = (env) => {
-    let config = {
-        mode: env == 'development' ? 'development' : 'production',
-        entry: {
-            app: './src/index.js'
-        },
-        output: {
-            filename: env == 'development' ? 'js/[name].dev.js' : '[name].[chunkhash:8].js',
-            chunkFilename: env == 'development' ? 'js/[name].dev.js' : '[name].[chunkhash:8].js',
-            path: path.resolve(__dirname, 'dist')
-        },
-        devServer: {
-            hot: true,
-            open: true,
-            port: 8080,
-            contentBase: './dist/',
-            compress: true,
-            quiet: true
-        },
-        resolve: {
-            extensions: ['.ts', '.tsx', '.js', '.jsx']
-        },
-        module: {
-            rules: [
-                {
-                    test: /\.(css|less)$/,
-                    use: [
-                        'css-hot-loader',
-                        MiniCssExtractPlugin.loader,
-                        'css-loader',
-                        'postcss-loader',
-                        {
-                            loader: 'less-loader',
-                            options: {
-                                javascriptEnabled: true,
-                                sourceMap: true,
-                                modifyVars
-                            }
-                        }
-                    ]
-                },
-                {
-                    test: /\.js[x]?$/,
-                    // 支持javascript按需加载antd
-                    use: {
-                        loader: 'babel-loader',
-                        options: {
-                            plugins: [
-                                ['import', {
-                                    libraryName: 'antd',
-                                    libraryDirectory: 'lib',
-                                    style: true
-                                }]
-                            ]
-                        }
-                    },
-                    exclude: /node_modules/
-                },
-                {
-                    test: /\.ts[x]?$/,
-                    // 支持typescript按需加载antd
-                    loader: "awesome-typescript-loader",
-                    options: {
-                        useCache: true,
-                        useBabel: false,
-                        getCustomTransformers: () => ({
-                            before: [tsImportPluginFactory({
-                                libraryName: 'antd',
-                                libraryDirectory: 'lib',
-                                style: true
-                            })]
-                        })
-                    }
-
+module.exports = {
+  mode: 'development',
+  // 配置入口文件
+  entry: './src/index.tsx',
+  // 配置出口
+  output: {
+    path: path.resolve(__dirname, './dist'),
+    filename: '[name].[chunkhash:6].js',
+    chunkFilename: 'chunks/[name].[contenthash:6].js',
+    publicPath: 'auto' // 'auto' 或者 '/' ，这个属性对于请求外部资源非常重要，如果路径错误，会报404错误
+  },
+  // 解析
+  resolve: {
+    // 省略扩展名
+    extensions: ['.js', '.jsx', '.ts', '.tsx'],
+    // 设置路径别名
+    alias: {}
+  },
+  devServer: {
+    port: 2335,
+    hot: true,
+  },
+  module: {
+    rules: [
+      {
+        // 配置 ts 和 js文件 loader
+        test: /\.(t|j)sx?$/,
+        use: {
+          loader: 'babel-loader',
+          options: {
+            presets: [
+              '@babel/preset-env',
+              '@babel/preset-typescript',
+              '@babel/preset-react'
+            ],
+            plugins: [
+              '@babel/plugin-proposal-class-properties',
+              [
+                // 配置按需加载
+                'import', {
+                  libraryName: 'antd',
+                  style: true
                 }
+              ]
             ]
+          }
         },
-        plugins: [
-            new webpack.HotModuleReplacementPlugin(),
-            new HtmlWebpackPlugin({
-                title: '',
-                filename: 'index.html',
-                template: 'index.html',
-                minify: {
-                    removeComments: true,
-                    collapseWhitespace: true,
-                    minifyCSS: true
-                }
-            }),
-            new webpack.DefinePlugin({
-                'process.env.NODE_ENV': JSON.stringify(env)
-            }),
-            new CleanWebpackPlugin(),
-            new MiniCssExtractPlugin({
-                filename: env == 'development' ? 'css/[name].dev.css' : '[name].[chunkhash:8].css',
-                chunkFilename: env == 'development' ? 'css/[name].dev.css' : '[name].[chunkhash:8].css'
-            })
-        ],
-        devtool: 'cheap-eval-source-map',
-        optimization: {
-            splitChunks: {
-                chunks: 'all',
-                name: 'vendor'
+        exclude: /node_modules/
+      },
+      {
+        test: /\.(c|le)ss$/,
+        use: [
+          MiniCssExtractPlugin.loader,
+          {
+            loader: 'css-loader',
+            options: {
+              modules: {
+                localIdentName: '[name]__[local]--[hash:base64:6]'
+              }
             }
-        }
-    };
-
-    return config;
-};
+          },
+          'postcss-loader',
+          {
+            loader: 'less-loader',
+            options: {
+              lessOptions: {
+                javascriptEnabled: true
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  plugins: [
+    // 自动生成html模板，内部实现了html文件的解析，否则需要添加额外的loader来处理html文件
+    new HtmlWebpackPlugin({
+      template: './index.html'
+    }),
+    new MiniCssExtractPlugin({
+      filename: 'css/[name].[contenthash:6].css',
+      chunkFilename: 'css/[id].[contenthash:6].css',
+      ignoreOrder: true
+    })
+  ]
+}
